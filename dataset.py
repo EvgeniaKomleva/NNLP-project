@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import yaml
 
-path = 'data/rdf_regular_eng/Test'
+path = 'data/rdf_unregular_eng/test'
 data = list()
 wrong_list = list()
 
@@ -23,6 +23,8 @@ data = {text: string
 }
 """
 iteration = 0
+
+
 for file in os.listdir(path):
     filename = os.path.join(path, file)
     # print(filename)
@@ -48,7 +50,7 @@ for file in os.listdir(path):
                 currency_pos_l.append(int(annotation.find('annotation_start').text))
                 currency_pos_r.append(int(annotation.find('annotation_end').text))
 
-    window = 5
+    window = 15
     target, tar_pos_l, tar_pos_r = [], [], []
 
     if len(currency) > len(amount):
@@ -64,18 +66,31 @@ for file in os.listdir(path):
         if amount_pos_l[i] > currency_pos_l[i] and amount_pos_r[i] < currency_pos_r[i]:
             wrong_list.append(filename)
             iteration += 1
+
         if amount_pos_l[i] < currency_pos_l[i]:
             trg = f'{amount[i]} {currency[i]}'
             target.append(trg)
             step = text[amount_pos_l[i]-window:currency_pos_r[i]+window].find(trg)
-            tar_pos_l.append(amount_pos_l[i] - window + step)
-            tar_pos_r.append(currency_pos_r[i] - window + step)
+            if step == -1:
+                l = amount_pos_l[i]
+                r = currency_pos_r[i]
+            else:
+                l = amount_pos_l[i] - window + step
+                r = currency_pos_r[i] - window + step
+            tar_pos_l.append(l)
+            tar_pos_r.append(r)
         else:
             trg = f'{currency[i]} {amount[i]}'
             target.append(trg)
             step = text[currency_pos_l[i] - window:amount_pos_r[i] + window].find(trg)
-            tar_pos_l.append(currency_pos_l[i] - window + step)
-            tar_pos_r.append(amount_pos_r[i] - window + step)
+            if step == -1:
+                l = currency_pos_l[i]
+                r = amount_pos_r[i]
+            else:
+                l = currency_pos_l[i] - window + step
+                r = amount_pos_r[i] - window + step
+            tar_pos_l.append(l)
+            tar_pos_r.append(r)
 
     data.append({'text': text,
                  'target': target,
@@ -97,4 +112,4 @@ for entry in data:
     if entry['filename'] in wrong_list:
         data.remove(entry)
 df = pd.DataFrame(data)
-df.to_csv('regular_test_fixed.csv')
+df.to_csv('irregular_test_fixed.csv')
