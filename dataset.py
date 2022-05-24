@@ -2,9 +2,12 @@ from bs4 import BeautifulSoup
 import lxml
 import os
 import pandas as pd
+import yaml
 
 path = 'data/rdf_regular_eng/Train'
 data = list()
+wrong_list = list()
+
 """
 data = {text: string
         target: string 
@@ -16,12 +19,13 @@ data = {text: string
         amount_pos_r: int
         currency_pos_l: int
         currency_pos_r: int
+        filename: str
 }
 """
 iteration = 0
 for file in os.listdir(path):
     filename = os.path.join(path, file)
-    print(filename)
+    # print(filename)
     infile = open(filename, "r", encoding='utf-8')
     contents = infile.read()
     soup = BeautifulSoup(contents, 'xml')
@@ -57,18 +61,21 @@ for file in os.listdir(path):
         amount_pos_r = amount_pos_r[:len(currency)]
 
     for i in range(len(amount)):
+        if amount_pos_l[i] > currency_pos_l[i] and amount_pos_r[i] < currency_pos_r[i]:
+            wrong_list.append(filename)
+            iteration += 1
         if amount_pos_l[i] < currency_pos_l[i]:
             trg = f'{amount[i]} {currency[i]}'
             target.append(trg)
             step = text[amount_pos_l[i]-window:currency_pos_r[i]+window].find(trg)
             tar_pos_l.append(amount_pos_l[i] - window + step)
-            tar_pos_r.append(amount_pos_r[i] - window + step)
+            tar_pos_r.append(currency_pos_r[i] - window + step)
         else:
             trg = f'{currency[i]} {amount[i]}'
             target.append(trg)
-            step = text[currency_pos_l[i] - window:currency_pos_r[i] + window].find(trg)
+            step = text[currency_pos_l[i] - window:amount_pos_r[i] + window].find(trg)
             tar_pos_l.append(currency_pos_l[i] - window + step)
-            tar_pos_r.append(currency_pos_r[i] - window + step)
+            tar_pos_r.append(amount_pos_l[i] - window + step)
 
     data.append({'text': text,
                  'target': target,
@@ -81,8 +88,13 @@ for file in os.listdir(path):
                  'currency_pos_l': currency_pos_l,
                  'currency_pos_r': currency_pos_r,
                  'filename': filename
+                 })
 
-    })
+print(len(data))
+print(iteration)
 
+for entry in data:
+    if entry['filename'] in wrong_list:
+        data.remove(entry)
 df = pd.DataFrame(data)
-df.to_csv('regular_train.csv')
+df.to_csv('regular_train_fixed.csv')
