@@ -4,7 +4,7 @@ import os
 import pandas as pd
 import yaml
 
-path = 'data/rdf_regular_eng/Train'
+path = 'data/rdf_regular_eng/Test'
 data = list()
 wrong_list = list()
 
@@ -75,7 +75,7 @@ for file in os.listdir(path):
             target.append(trg)
             step = text[currency_pos_l[i] - window:amount_pos_r[i] + window].find(trg)
             tar_pos_l.append(currency_pos_l[i] - window + step)
-            tar_pos_r.append(amount_pos_l[i] - window + step)
+            tar_pos_r.append(amount_pos_r[i] - window + step)
 
     data.append({'text': text,
                  'target': target,
@@ -97,4 +97,4 @@ for entry in data:
     if entry['filename'] in wrong_list:
         data.remove(entry)
 df = pd.DataFrame(data)
-df.to_csv('regular_train_fixed.csv')
+df.to_csv('regular_test_fixed.csv')
